@@ -7,13 +7,13 @@ from ..fetchers.news import NewsFetcher
 from loguru import logger
 
 
-# Category keyword mapping
+# Category keyword mapping（中英文关键词）
 CATEGORY_KEYWORDS = {
-    '产品发布': ['release', 'launch', '发布', '推出', '上线', 'open', 'announce'],
-    '技术突破': ['breakthrough', 'research', 'paper', '突破', '研究', '论文', 'benchmark', 'sota'],
-    '开源发布': ['open-source', 'open source', 'github', '开源', 'huggingface'],
-    '行业动态': ['fund', 'invest', 'acquire', '融资', '收购', '合作', 'partnership'],
-    '安全对齐': ['safety', 'alignment', 'security', '安全', '对齐', 'regulation'],
+    '产品发布': ['release', 'launch', '发布', '推出', '上线', 'open', 'announce', '正式发布', '新模型', '旗舰'],
+    '技术突破': ['breakthrough', 'research', 'paper', '突破', '研究', '论文', 'benchmark', 'sota', 'state-of-the-art', '新算法', 'architect'],
+    '开源发布': ['open-source', 'open source', 'github', '开源', 'huggingface', '模型开源', '代码开源'],
+    '行业动态': ['fund', 'invest', 'acquire', '融资', '收购', '合作', 'partnership', '估值', 'ipo', '独角兽'],
+    '安全对齐': ['safety', 'alignment', 'security', '安全', '对齐', 'regulation', '监管', '伦理'],
 }
 
 def auto_categorize(title: str, summary: str, default: str = '行业动态') -> str:

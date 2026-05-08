@@ -16,8 +16,8 @@ const Leaderboard = ({ onModelClick }) => {
 
   const tabData = [
     { label: '全球大语言模型', data: globalModels },
-    { label: '除中国以外', data: nonChinaModels },
-    { label: '中国模型', data: chinaModels },
+    { label: '国外', data: nonChinaModels },
+    { label: '国内', data: chinaModels },
   ];
 
   const currentData = tabData[activeTab].data;
