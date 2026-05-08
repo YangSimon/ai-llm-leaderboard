@@ -10,13 +10,33 @@ export const useRefreshTimer = () => {
     return stored || getTodayString();
   });
   const [needsRefresh, setNeedsRefresh] = useState(() => shouldRefreshData(lastUpdateDate));
+  const [dataUpdateInfo, setDataUpdateInfo] = useState('');
+
+  // Load version info from the build-generated data
+  useEffect(() => {
+    const loadVersionInfo = async () => {
+      try {
+        const { dataVersion } = await import('../data/version');
+        if (dataVersion && dataVersion.lastUpdate) {
+          const date = new Date(dataVersion.lastUpdate);
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          setDataUpdateInfo(`数据上次更新于 ${hours}:${minutes} UTC (${dataVersion.modelCount} 个模型, ${dataVersion.newsCount} 条新闻)`);
+        }
+      } catch {
+        // version.js may not exist in dev mode
+        setDataUpdateInfo('');
+      }
+    };
+    loadVersionInfo();
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
       const seconds = getSecondsUntilMidnight();
       setSecondsRemaining(seconds);
       
-      // 检查是否跨天
+      // Check if crossed midnight
       const today = getTodayString();
       if (today !== lastUpdateDate) {
         setLastUpdateDate(today);
@@ -38,7 +58,7 @@ export const useRefreshTimer = () => {
 
   const formattedTime = formatTime(secondsRemaining);
   
-  // 计算百分比进度
+  // Calculate progress percentage
   const totalSecondsInDay = 24 * 60 * 60;
   const progressPercent = ((totalSecondsInDay - secondsRemaining) / totalSecondsInDay) * 100;
 
@@ -48,7 +68,8 @@ export const useRefreshTimer = () => {
     progressPercent,
     lastUpdateDate,
     needsRefresh,
-    triggerRefresh
+    triggerRefresh,
+    dataUpdateInfo,
   };
 };
 
