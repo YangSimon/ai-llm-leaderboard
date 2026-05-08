@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-gradient: linear-gradient(135deg, #00a3ff 0%, #417dff 100%);
+  --glow-color: rgba(0, 163, 255, 0.3);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #0a0a0f;
+  color: #e5e5e5;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+.gradient-text {
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-bg {
+  background: var(--primary-gradient);
+}
+
+.glow-effect {
+  box-shadow: 0 0 20px var(--glow-color);
+}
+
+.glow-border {
+  border: 1px solid rgba(0, 163, 255, 0.3);
+  box-shadow: 0 0 10px var(--glow-color), inset 0 0 10px rgba(0, 163, 255, 0.1);
+}
+
+.card-gradient {
+  background: linear-gradient(145deg, rgba(20, 20, 30, 0.9) 0%, rgba(10, 10, 20, 0.95) 100%);
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(0, 163, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 163, 255, 0.6);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a2e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3a3a5e;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5a5a7e;
+}
+
+.MuiTableCell-root {
+  background: transparent !important;
+}
+
+.MuiPaper-root {
+  background: rgba(15, 15, 25, 0.9) !important;
+  backdrop-filter: blur(10px);
+}
