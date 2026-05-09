@@ -16,6 +16,12 @@ concurrency:
   group: crawler
   cancel-in-progress: false
 
+# Permissions needed for pushing data and deploying
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   crawl:
     runs-on: ubuntu-latest
@@ -24,6 +30,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,11 +46,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install dependencies
-        run: pip install -r crawler/requirements.txt
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r crawler/requirements.txt
 
       - name: Run crawler
-        run: python crawler/main.py
+        run: python -m crawler.main
+        env:
+          PYTHONPATH: ${{ github.workspace }}
 
       - name: Check for data changes
         id: git-check
@@ -58,16 +70,19 @@ jobs:
 
       - name: Commit and push data changes
         if: steps.git-check.outputs.changed == 'true'
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore: auto-update leaderboard data - $(date -u '+%Y-%m-%d %H:%M') UTC"
-          file_pattern: 'src/data/*.js'
-          skip_dirty_check: false
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/data/
+          git commit -m "chore: auto-update leaderboard data - $(date -u '+%Y-%m-%d %H:%M') UTC"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:
     needs: crawl
     runs-on: ubuntu-latest
-    if: needs.crawl.result == 'success'
+    if: always() && (needs.crawl.result == 'success' || needs.crawl.result == 'skipped')
     timeout-minutes: 10
 
     steps:
@@ -75,6 +90,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -82,7 +98,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install Node dependencies
         run: npm ci
 
       - name: Build
