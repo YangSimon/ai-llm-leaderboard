@@ -1,26 +1,22 @@
-name: AI Leaderboard Crawler
+name: Data Crawler
 
 on:
   schedule:
-    # Run every hour at minute 0
-    - cron: '0 * * * *'
-  workflow_dispatch:  # Allow manual trigger
+    # Run hourly at :05 (offset from :00 to avoid peak)
+    - cron: '5 * * * *'
+  workflow_dispatch:  # Manual trigger from Actions tab
   push:
     branches: [main]
     paths:
       - 'crawler/**'
       - '.github/workflows/crawl.yml'
 
-# Prevent concurrent runs
 concurrency:
   group: crawler
   cancel-in-progress: false
 
-# Permissions needed for pushing data and deploying
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   crawl:
@@ -28,23 +24,17 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Cache pip packages
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('crawler/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          restore-keys: ${{ runner.os }}-pip-
 
       - name: Install Python dependencies
         run: |
@@ -56,57 +46,14 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}
 
-      - name: Check for data changes
-        id: git-check
+      - name: Commit and push data changes
         run: |
           if git diff --quiet src/data/; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "No data changes detected"
-          else
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "Data changes detected:"
-            git diff --stat src/data/
+            echo "No data changes"
+            exit 0
           fi
-
-      - name: Commit and push data changes
-        if: steps.git-check.outputs.changed == 'true'
-        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add src/data/
-          git commit -m "chore: auto-update leaderboard data - $(date -u '+%Y-%m-%d %H:%M') UTC"
+          git commit -m "chore: auto-update leaderboard data [skip ci]"
           git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  deploy:
-    needs: crawl
-    runs-on: ubuntu-latest
-    if: always() && (needs.crawl.result == 'success' || needs.crawl.result == 'skipped')
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install Node dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          cname: false

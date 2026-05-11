@@ -11,8 +11,8 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from crawler.config import (
-    OUTPUT_LEADERBOARD, OUTPUT_NEWS, OUTPUT_VERSION,
-    NEWS_SOURCES,
+    OUTPUT_LEADERBOARD, OUTPUT_NEWS, OUTPUT_MODEL_DETAILS,
+    OUTPUT_VERSION, NEWS_SOURCES,
 )
 from crawler.utils.logger import setup_logger
 from crawler.utils.date_utils import now_iso
@@ -31,6 +31,7 @@ from crawler.generators.js_generator import (
     generate_leaderboard_js,
     generate_news_js,
     generate_version_js,
+    generate_model_details_js,
 )
 
 from crawler.models import CrawlStats
@@ -137,12 +138,15 @@ async def run(dry_run: bool = False):
             news_sources=[s.name for s in NEWS_SOURCES],
             output_path=str(version_path),
         )
+        details_path = PROJECT_ROOT / OUTPUT_MODEL_DETAILS
+        generate_model_details_js(classified['global'], str(details_path))
         logger.success("Output files generated successfully!")
     else:
         logger.info("[DRY RUN] Skipping file generation")
         logger.info(f"  Would write {len(classified['global'])} models to leaderboard.js")
         logger.info(f"  Would write {len(processed_news)} news to news.js")
         logger.info(f"  Would write version.js")
+        logger.info(f"  Would write modelDetails.js")
     
     # Print summary
     end_time = now_iso()
