@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Container, CssBaseline } from '@mui/material';
+import { Box, Container } from '@mui/material';
 import Navbar from './Navbar';
 import Leaderboard from './Leaderboard';
 import NewsTimeline from './NewsTimeline';
@@ -65,9 +65,7 @@ const Layout = () => {
         },
       }}
     >
-      <CssBaseline />
-      
-      <Navbar 
+      <Navbar
         activeTab={activeTab} 
         onTabChange={setActiveTab}
         onRefresh={handleRefresh}

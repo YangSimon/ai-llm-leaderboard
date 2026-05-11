@@ -233,17 +233,21 @@ def enrich_model(raw: RawModel) -> ProcessedModel:
 
     logo = COMPANY_LOGO.get(company, DEFAULT_LOGO)
 
-    # Determine overall score: manual > crawled > default
+    has_real_elo = raw.elo_score is not None
+    has_real_overall = raw.overall_score is not None
+
     if manual and 'overallScore' in manual:
         overall = manual['overallScore']
-    elif raw.overall_score is not None:
+        is_estimated = False
+    elif has_real_overall:
         overall = raw.overall_score
         if overall > 100:
             overall = round(overall / 10, 1)
+        is_estimated = not has_real_elo
     else:
         overall = 70.0
+        is_estimated = True
 
-    # Derive dimension scores: manual > real crawled > company-profile-derived
     dims = derive_dimension_scores(raw, overall)
     if manual:
         for dim_key, model_attr in [
@@ -289,6 +293,7 @@ def enrich_model(raw: RawModel) -> ProcessedModel:
         dataSource=raw.source,
         eloScore=raw.elo_score,
         lastUpdated=now_iso(),
+        isEstimated=is_estimated,
     )
 
 

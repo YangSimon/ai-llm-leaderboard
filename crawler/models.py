@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 
 @dataclass
 class RawModel:
     """Raw model data from a single data source"""
     name: str
     company: str
-    source: str  # 'lmsys' | 'openrouter' | 'artificial_analysis' | 'manual'
+    source: str
     elo_score: Optional[float] = None
     overall_score: Optional[float] = None
     reasoning: Optional[float] = None
@@ -17,7 +17,7 @@ class RawModel:
     multilingual: Optional[float] = None
     context_length: Optional[int] = None
     vote_count: Optional[int] = None
-    extra: Dict = field(default_factory=dict)
+    extra: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class ProcessedModel:
@@ -40,6 +40,7 @@ class ProcessedModel:
     dataSource: str = ''
     eloScore: Optional[float] = None
     lastUpdated: str = ''
+    isEstimated: bool = False
 
 @dataclass
 class RawNews:

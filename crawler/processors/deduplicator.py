@@ -94,9 +94,12 @@ def is_fuzzy_match(name_a: str, name_b: str, threshold: float = FUZZY_THRESHOLD)
     b = normalize_name(name_b)
     if a == b:
         return True
-    # Token overlap: if one name is a substring of the other after normalization
+    # Substring match with length ratio check to avoid "gpt-4" matching "gpt-4o-mini"
     if a in b or b in a:
-        return True
+        shorter = min(len(a), len(b))
+        longer = max(len(a), len(b))
+        if shorter >= longer * 0.7:
+            return True
     ratio = SequenceMatcher(None, a, b).ratio()
     return ratio >= threshold
 

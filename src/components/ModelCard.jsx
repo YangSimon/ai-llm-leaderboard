@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -21,26 +21,29 @@ const ModelCard = () => {
   const [selectedModel, setSelectedModel] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  const allModels = [...globalModels, ...chinaModels].filter(
-    (model, index, self) => index === self.findIndex((m) => m.id === model.id)
+  const allModels = useMemo(() => {
+    const seen = new Map();
+    for (const m of [...globalModels, ...chinaModels]) {
+      if (!seen.has(m.id)) seen.set(m.id, m);
+    }
+    return Array.from(seen.values());
+  }, []);
+
+  const filteredModels = useMemo(
+    () =>
+      allModels.filter(
+        (model) =>
+          model.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          model.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (model.tags || []).some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      ),
+    [allModels, searchQuery]
   );
 
-  const filteredModels = allModels.filter(
-    (model) =>
-      model.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      model.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      model.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
-  const handleModelClick = (model) => {
-    setSelectedModel(model);
-    setDetailOpen(true);
-  };
-
-  const getTopTags = () => {
+  const topTags = useMemo(() => {
     const tagCounts = {};
     allModels.forEach((model) => {
-      model.tags.forEach((tag) => {
+      (model.tags || []).forEach((tag) => {
         tagCounts[tag] = (tagCounts[tag] || 0) + 1;
       });
     });
@@ -48,9 +51,12 @@ const ModelCard = () => {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
       .map(([tag]) => tag);
-  };
+  }, [allModels]);
 
-  const topTags = getTopTags();
+  const handleModelClick = (model) => {
+    setSelectedModel(model);
+    setDetailOpen(true);
+  };
 
   return (
     <Box sx={{ animation: 'fadeIn 0.5s ease-out' }}>
@@ -238,7 +244,7 @@ const ModelCard = () => {
 
                   {/* Tags */}
                   <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                    {model.tags.slice(0, 3).map((tag) => (
+                    {(model.tags || []).slice(0, 3).map((tag) => (
                       <Chip
                         key={tag}
                         label={tag}
@@ -251,7 +257,7 @@ const ModelCard = () => {
                         }}
                       />
                     ))}
-                    {model.tags.length > 3 && (
+                    {(model.tags || []).length > 3 && (
                       <Chip
                         label={`+${model.tags.length - 3}`}
                         size="small"
@@ -275,7 +281,7 @@ const ModelCard = () => {
                       fontSize: '0.7rem',
                     }}
                   >
-                    上下文: {model.contextLength.toLocaleString()} tokens
+                    上下文: {(model.contextLength ?? 0).toLocaleString()} tokens
                   </Typography>
                 </CardContent>
               </CardActionArea>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -17,11 +17,9 @@ import SourceIcon from '@mui/icons-material/Source';
 import { formatDateTime } from '../utils/timeUtils';
 
 const NewsDetail = ({ open, onClose, news }) => {
-  if (!news) return null;
-
   return (
     <Dialog
-      open={open}
+      open={open && !!news}
       onClose={onClose}
       maxWidth="md"
       fullWidth
@@ -33,7 +31,9 @@ const NewsDetail = ({ open, onClose, news }) => {
         },
       }}
     >
-      <DialogTitle sx={{ 
+      {news && (
+      <>
+      <DialogTitle sx={{
         display: 'flex', 
         alignItems: 'flex-start', 
         justifyContent: 'space-between',
@@ -124,6 +124,8 @@ const NewsDetail = ({ open, onClose, news }) => {
           关闭
         </Button>
       </DialogActions>
+      </>
+      )}
     </Dialog>
   );
 };

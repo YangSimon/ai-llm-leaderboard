@@ -8,10 +8,8 @@ const RefreshTimer = ({ onRefresh }) => {
   const { formattedTime, progressPercent, lastUpdateDate, needsRefresh, triggerRefresh } = useRefreshTimer();
 
   const handleRefresh = () => {
-    if (needsRefresh) {
-      triggerRefresh();
-      if (onRefresh) onRefresh();
-    }
+    triggerRefresh();
+    if (onRefresh) onRefresh();
   };
 
   return (

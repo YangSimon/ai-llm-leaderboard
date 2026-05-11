@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """AI Leaderboard Crawler - Main entry point"""
 
+import argparse
 import asyncio
 import os
 import sys
@@ -38,34 +39,27 @@ from crawler.models import CrawlStats
 from loguru import logger
 
 
+async def _fetch_single(fetcher_cls):
+    """Helper to fetch from a single fetcher with error handling."""
+    async with fetcher_cls() as f:
+        return await f.fetch()
+
+
 async def fetch_all_leaderboard_data() -> list:
     """Fetch data from all leaderboard sources in parallel"""
+    fetcher_classes = [LMSYSFetcher, OpenRouterFetcher, ArtificialAnalysisFetcher]
+    results = await asyncio.gather(
+        *[_fetch_single(cls) for cls in fetcher_classes],
+        return_exceptions=True,
+    )
+
     all_raw = []
-    
-    # LMSYS
-    try:
-        async with LMSYSFetcher() as f:
-            lmsys_data = await f.fetch()
-            all_raw.extend(lmsys_data)
-    except Exception as e:
-        logger.error(f"LMSYS fetch failed: {e}")
-    
-    # OpenRouter
-    try:
-        async with OpenRouterFetcher() as f:
-            or_data = await f.fetch()
-            all_raw.extend(or_data)
-    except Exception as e:
-        logger.error(f"OpenRouter fetch failed: {e}")
-    
-    # Artificial Analysis
-    try:
-        async with ArtificialAnalysisFetcher() as f:
-            aa_data = await f.fetch()
-            all_raw.extend(aa_data)
-    except Exception as e:
-        logger.error(f"ArtificialAnalysis fetch failed: {e}")
-    
+    for i, result in enumerate(results):
+        if isinstance(result, Exception):
+            logger.error(f"{fetcher_classes[i].__name__} fetch failed: {result}")
+        else:
+            all_raw.extend(result)
+
     return all_raw
 
 
@@ -166,7 +160,6 @@ async def run(dry_run: bool = False):
 
 
 def main():
-    import argparse
     parser = argparse.ArgumentParser(description='AI Leaderboard Crawler')
     parser.add_argument('--dry-run', action='store_true', help='Print results without writing files')
     parser.add_argument('--debug', action='store_true', help='Enable debug logging')

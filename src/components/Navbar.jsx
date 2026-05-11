@@ -1,20 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AppBar, Toolbar, Box, Typography, Chip, Container, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import RefreshTimer from './RefreshTimer';
 
+const TABS = [
+  { key: 'leaderboard', label: '排行榜', icon: '🏆' },
+  { key: 'news', label: '最新资讯', icon: '📰' },
+  { key: 'models', label: '模型介绍', icon: '🤖' },
+];
+
 const Navbar = ({ activeTab, onTabChange, onRefresh }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [drawerOpen, setDrawerOpen] = React.useState(false);
-
-  const tabs = [
-    { key: 'leaderboard', label: '排行榜', icon: '🏆' },
-    { key: 'news', label: '最新资讯', icon: '📰' },
-    { key: 'models', label: '模型介绍', icon: '🤖' },
-  ];
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const handleTabClick = (key) => {
     onTabChange(key);
@@ -71,7 +71,7 @@ const Navbar = ({ activeTab, onTabChange, onRefresh }) => {
 
           {/* Desktop Navigation */}
           <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1, flex: 1 }}>
-            {tabs.map((tab) => (
+            {TABS.map((tab) => (
               <Chip
                 key={tab.key}
                 icon={<span style={{ fontSize: '1rem' }}>{tab.icon}</span>}
@@ -127,7 +127,7 @@ const Navbar = ({ activeTab, onTabChange, onRefresh }) => {
               animation: 'fadeIn 0.2s ease-out',
             }}
           >
-            {tabs.map((tab) => (
+            {TABS.map((tab) => (
               <Box
                 key={tab.key}
                 onClick={() => handleTabClick(tab.key)}

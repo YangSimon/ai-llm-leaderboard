@@ -1,68 +1,105 @@
 import json
-from typing import List, Dict
+import os
+import tempfile
+from typing import List, Dict, Any, Optional
 from ..models import ProcessedModel, ProcessedNews
 from ..utils.date_utils import now_iso
 from loguru import logger
 
 
-def model_to_js_obj(m: ProcessedModel) -> str:
-    """Convert a ProcessedModel to JavaScript object literal"""
-    lines = ['    {']
-    lines.append(f'      id: {js_str(m.id)},')
-    lines.append(f'      name: {js_str(m.name)},')
-    lines.append(f'      company: {js_str(m.company)},')
-    lines.append(f'      logo: {js_str(m.logo)},')
-    lines.append(f'      overallScore: {m.overallScore},')
-    lines.append(f'      reasoning: {m.reasoning},')
-    lines.append(f'      coding: {m.coding},')
-    lines.append(f'      math: {m.math},')
-    lines.append(f'      multimodal: {m.multimodal},')
-    lines.append(f'      creativeWriting: {m.creativeWriting},')
-    lines.append(f'      multilingual: {m.multilingual},')
-    lines.append(f'      contextLength: {m.contextLength},')
-    lines.append(f'      tags: {js_array(m.tags)},')
-    lines.append(f'      description: {js_str(m.description)},')
-    release = m.releaseDate or ''
-    lines.append(f'      releaseDate: {js_str(release)},')
-    # Optional new fields
-    lines.append(f'      dataSource: {js_str(m.dataSource)},')
+def _safe_js_value(val: Any) -> str:
+    """Safely convert a Python value to a JS literal using json.dumps for strings."""
+    if val is None:
+        return 'null'
+    if isinstance(val, bool):
+        return 'true' if val else 'false'
+    if isinstance(val, (int, float)):
+        return str(val)
+    return json.dumps(str(val), ensure_ascii=False)
+
+
+def _safe_js_array(arr: List[str]) -> str:
+    """Safely convert a list of strings to a JS array literal."""
+    if not arr:
+        return '[]'
+    items = ', '.join(json.dumps(str(item), ensure_ascii=False) for item in arr)
+    return f'[{items}]'
+
+
+def _model_to_js_dict(m: ProcessedModel) -> str:
+    """Convert a ProcessedModel to a JS object literal using safe serialization."""
+    fields = [
+        ('id', _safe_js_value(m.id)),
+        ('name', _safe_js_value(m.name)),
+        ('company', _safe_js_value(m.company)),
+        ('logo', _safe_js_value(m.logo)),
+        ('overallScore', str(m.overallScore)),
+        ('reasoning', str(m.reasoning)),
+        ('coding', str(m.coding)),
+        ('math', str(m.math)),
+        ('multimodal', str(m.multimodal)),
+        ('creativeWriting', str(m.creativeWriting)),
+        ('multilingual', str(m.multilingual)),
+        ('contextLength', str(m.contextLength) if m.contextLength is not None else 'null'),
+        ('tags', _safe_js_array(m.tags)),
+        ('description', _safe_js_value(m.description)),
+        ('releaseDate', _safe_js_value(m.releaseDate or '')),
+        ('dataSource', _safe_js_value(m.dataSource)),
+    ]
     if m.eloScore is not None:
-        lines.append(f'      eloScore: {m.eloScore},')
-    lines.append(f'      lastUpdated: {js_str(m.lastUpdated)},')
-    lines.append('    }')
-    return '\n'.join(lines)
+        fields.append(('eloScore', str(m.eloScore)))
+    fields.append(('lastUpdated', _safe_js_value(m.lastUpdated)))
+
+    inner = ',\n      '.join(f'{k}: {v}' for k, v in fields)
+    return f'    {{\n      {inner}\n    }}'
 
 
-def news_to_js_obj(n: ProcessedNews) -> str:
-    """Convert a ProcessedNews to JavaScript object literal"""
-    lines = ['  {']
-    lines.append(f'    id: {js_str(n.id)},')
-    lines.append(f'    title: {js_str(n.title)},')
-    lines.append(f'    summary: {js_str(n.summary)},')
-    lines.append(f'    content: {js_str(n.content)},')
-    lines.append(f'    source: {js_str(n.source)},')
-    lines.append(f'    date: {js_str(n.date)},')
-    lines.append(f'    category: {js_str(n.category)},')
-    lines.append(f'    image: {js_str(n.image)},')
-    lines.append(f'    url: {js_str(n.url)},')
-    lines.append(f'    author: {js_str(n.author)},')
-    lines.append(f'    lastUpdated: {js_str(n.lastUpdated)},')
-    lines.append('  }')
-    return '\n'.join(lines)
+def _news_to_js_dict(n: ProcessedNews) -> str:
+    """Convert a ProcessedNews to a JS object literal using safe serialization."""
+    fields = [
+        ('id', _safe_js_value(n.id)),
+        ('title', _safe_js_value(n.title)),
+        ('summary', _safe_js_value(n.summary)),
+        ('content', _safe_js_value(n.content)),
+        ('source', _safe_js_value(n.source)),
+        ('date', _safe_js_value(n.date)),
+        ('category', _safe_js_value(n.category)),
+        ('image', _safe_js_value(n.image)),
+        ('url', _safe_js_value(n.url)),
+        ('author', _safe_js_value(n.author)),
+        ('lastUpdated', _safe_js_value(n.lastUpdated)),
+    ]
+    inner = ',\n    '.join(f'{k}: {v}' for k, v in fields)
+    return f'  {{\n    {inner}\n  }}'
+
+
+def _atomic_write(path: str, content: str) -> None:
+    """Write content to a file atomically to avoid partial writes on crash."""
+    dir_name = os.path.dirname(path)
+    fd, tmp_path = tempfile.mkstemp(dir=dir_name, suffix='.tmp')
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            f.write(content)
+        os.replace(tmp_path, path)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def generate_leaderboard_js(classified: Dict[str, List[ProcessedModel]], output_path: str):
     """Generate src/data/leaderboard.js"""
     content = '// AI 大模型排行榜数据 (自动生成)\n'
     content += '// Generated by crawler at ' + now_iso() + '\n\n'
-    
+
     for key, export_name in [('global', 'globalModels'), ('non_china', 'nonChinaModels'), ('china', 'chinaModels')]:
         models = classified.get(key, [])
         content += f'export const {export_name} = [\n'
-        content += ',\n'.join(model_to_js_obj(m) for m in models)
+        content += ',\n'.join(_model_to_js_dict(m) for m in models)
         content += '\n];\n\n'
-    
-    # Add scoreCategories for frontend compatibility
+
     content += (
         'export const scoreCategories = [\n'
         "  { key: 'overallScore', label: '综合评分', color: '#00a3ff' },\n"
@@ -75,8 +112,7 @@ def generate_leaderboard_js(classified: Dict[str, List[ProcessedModel]], output_
         '];\n'
     )
 
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(content)
+    _atomic_write(output_path, content)
     logger.info(f"Generated {output_path} ({sum(len(v) for v in classified.values())} models)")
 
 
@@ -85,10 +121,9 @@ def generate_news_js(news: List[ProcessedNews], output_path: str):
     content = '// AI 大模型最新新闻数据 (自动生成)\n'
     content += '// Generated by crawler at ' + now_iso() + '\n\n'
     content += 'export const newsData = [\n'
-    content += ',\n'.join(news_to_js_obj(n) for n in news)
+    content += ',\n'.join(_news_to_js_dict(n) for n in news)
     content += '\n];\n\n'
-    
-    # Add news categories
+
     content += 'export const newsCategories = [\n'
     content += "  { key: 'all', label: '全部' },\n"
     content += "  { key: '产品发布', label: '产品发布' },\n"
@@ -98,9 +133,8 @@ def generate_news_js(news: List[ProcessedNews], output_path: str):
     content += "  { key: '行业应用', label: '行业应用' },\n"
     content += "  { key: '行业报告', label: '行业报告' },\n"
     content += '];\n'
-    
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(content)
+
+    _atomic_write(output_path, content)
     logger.info(f"Generated {output_path} ({len(news)} news items)")
 
 
@@ -122,8 +156,7 @@ export const dataVersion = {{
   isAutoUpdate: true
 }};
 '''
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(content)
+    _atomic_write(output_path, content)
     logger.info(f"Generated {output_path}")
 
 
@@ -156,8 +189,7 @@ def generate_model_details_js(models: List[ProcessedModel], output_path: str):
         '};\n'
     )
 
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(content)
+    _atomic_write(output_path, content)
     logger.info(f"Generated {output_path} ({len(entries)} models)")
 
 
@@ -225,50 +257,32 @@ def _auto_detail_to_js(m: ProcessedModel) -> str:
 
 
 def _detail_to_js(model_id: str, detail: dict) -> str:
-    """Convert a model detail dict to JS object literal."""
-    lines = [f"  {js_str(model_id)}: {{"]
+    """Convert a model detail dict to JS object literal using safe serialization."""
+    lines = [f"  {_safe_js_value(model_id)}: {{"]
 
-    # fullDescription
-    lines.append(f'    fullDescription: {js_str(detail.get("fullDescription", ""))},')
+    lines.append(f'    fullDescription: {_safe_js_value(detail.get("fullDescription", ""))},')
 
-    # capabilities
     caps = detail.get('capabilities', [])
     cap_lines = ['    capabilities: [']
     for i, cap in enumerate(caps):
         comma = ',' if i < len(caps) - 1 else ''
         cap_lines.append(
-            f'      {{ name: {js_str(cap["name"])}, '
+            f'      {{ name: {_safe_js_value(cap["name"])}, '
             f'level: {cap["level"]}, '
-            f'description: {js_str(cap["description"])} }}{comma}'
+            f'description: {_safe_js_value(cap["description"])} }}{comma}'
         )
     cap_lines.append('    ],')
     lines.extend(cap_lines)
 
-    # useCases
     cases = detail.get('useCases', [])
-    lines.append(f'    useCases: {js_array(cases)},')
+    lines.append(f'    useCases: {_safe_js_array(cases)},')
 
-    # pricing
     pricing = detail.get('pricing', {})
     lines.append('    pricing: {')
-    lines.append(f'      input: {js_str(pricing.get("input", ""))},')
-    lines.append(f'      output: {js_str(pricing.get("output", ""))},')
-    lines.append(f'      context: {js_str(pricing.get("context", ""))}')
+    lines.append(f'      input: {_safe_js_value(pricing.get("input", ""))},')
+    lines.append(f'      output: {_safe_js_value(pricing.get("output", ""))},')
+    lines.append(f'      context: {_safe_js_value(pricing.get("context", ""))}')
     lines.append('    }')
 
     lines.append('  }')
     return '\n'.join(lines)
-def js_str(s: str) -> str:
-    """Convert string to JS string literal"""
-    if not s:
-        return "''"
-    escaped = s.replace('\\', '\\\\').replace("'", "\\'").replace('\n', '\\n').replace('\r', '')
-    return f"'{escaped}'"
-
-
-def js_array(arr: list) -> str:
-    """Convert list to JS array literal"""
-    if not arr:
-        return '[]'
-    items = ', '.join(js_str(item) for item in arr)
-    return f'[{items}]'

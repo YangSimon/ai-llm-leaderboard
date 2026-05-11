@@ -27,25 +27,23 @@ import StarIcon from '@mui/icons-material/Star';
 import { getModelDetail } from '../data/modelDetails';
 import ScoreBar from './ScoreBar';
 
+const CAPABILITY_ICONS = {
+  '文本理解': <PsychologyIcon />,
+  '图像分析': <VisibilityIcon />,
+  '代码生成': <CodeIcon />,
+  '数学推理': <CalculateIcon />,
+  '创意写作': <BrushIcon />,
+  '多语言': <TranslateIcon />,
+};
+
+const CAPABILITY_COLORS = ['#00a3ff', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'];
+
 const ModelDetail = ({ open, onClose, model }) => {
-  if (!model) return null;
-
-  const detail = getModelDetail(model.id);
-
-  const capabilityIcons = {
-    '文本理解': <PsychologyIcon />,
-    '图像分析': <VisibilityIcon />,
-    '代码生成': <CodeIcon />,
-    '数学推理': <CalculateIcon />,
-    '创意写作': <BrushIcon />,
-    '多语言': <TranslateIcon />,
-  };
-
-  const capabilityColors = ['#00a3ff', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'];
+  const detail = model ? getModelDetail(model.id) : null;
 
   return (
     <Dialog
-      open={open}
+      open={open && !!model}
       onClose={onClose}
       maxWidth="md"
       fullWidth
@@ -59,6 +57,8 @@ const ModelDetail = ({ open, onClose, model }) => {
         },
       }}
     >
+      {model && (
+      <>
       <DialogTitle sx={{ 
         display: 'flex', 
         alignItems: 'center', 
@@ -112,7 +112,7 @@ const ModelDetail = ({ open, onClose, model }) => {
             擅长领域
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {model.tags.map((tag) => (
+            {(model.tags || []).map((tag) => (
               <Chip
                 key={tag}
                 label={tag}
@@ -149,7 +149,7 @@ const ModelDetail = ({ open, onClose, model }) => {
             上下文窗口
           </Typography>
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {model.contextLength.toLocaleString()} tokens
+            {(model.contextLength ?? 0).toLocaleString()} tokens
           </Typography>
         </Box>
 
@@ -163,8 +163,8 @@ const ModelDetail = ({ open, onClose, model }) => {
               {detail.capabilities.map((cap, index) => (
                 <ListItem key={cap.name} sx={{ px: 0 }}>
                   <ListItemIcon sx={{ minWidth: 36 }}>
-                    {React.cloneElement(capabilityIcons[cap.name] || <StarIcon />, {
-                      sx: { color: capabilityColors[index % capabilityColors.length] }
+                    {React.cloneElement(CAPABILITY_ICONS[cap.name] || <StarIcon />, {
+                      sx: { color: CAPABILITY_COLORS[index % CAPABILITY_COLORS.length] }
                     })}
                   </ListItemIcon>
                   <ListItemText
@@ -179,8 +179,8 @@ const ModelDetail = ({ open, onClose, model }) => {
                           sx={{ 
                             height: 18, 
                             fontSize: '0.65rem',
-                            background: `${capabilityColors[index % capabilityColors.length]}20`,
-                            color: capabilityColors[index % capabilityColors.length],
+                            background: `${CAPABILITY_COLORS[index % CAPABILITY_COLORS.length]}20`,
+                            color: CAPABILITY_COLORS[index % CAPABILITY_COLORS.length],
                           }}
                         />
                       </Box>
@@ -290,6 +290,8 @@ const ModelDetail = ({ open, onClose, model }) => {
           关闭
         </Button>
       </DialogActions>
+      </>
+      )}
     </Dialog>
   );
 };

@@ -1,4 +1,5 @@
 import asyncio
+import random
 from typing import Optional, Any
 import httpx
 from loguru import logger
@@ -16,12 +17,27 @@ class BaseFetcher:
             timeout=30.0,
             headers={'User-Agent': 'AI-Leaderboard-Crawler/1.0'},
             follow_redirects=True,
+            limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
         )
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self.client:
-            await self.client.aclose()
+            try:
+                await self.client.aclose()
+            except Exception:
+                pass
+
+    async def _wait_with_backoff(self, attempt: int, status_code: int = 0):
+        """Exponential backoff with jitter. Longer wait for 429."""
+        if status_code == 429:
+            base = min(30, 5 * (2 ** attempt))
+        else:
+            base = 2 ** attempt
+        jitter = random.uniform(0.5, 1.5)
+        wait = base * jitter
+        logger.debug(f"[{self.name}] Backoff: waiting {wait:.1f}s (attempt {attempt + 1}, status {status_code})")
+        await asyncio.sleep(wait)
 
     async def fetch_json(self, url: str, max_retries: int = 3) -> Optional[Any]:
         """Fetch JSON from URL with retry"""
@@ -34,17 +50,18 @@ class BaseFetcher:
                 logger.info(f"[{self.name}] Successfully fetched {url}")
                 return data
             except httpx.HTTPStatusError as e:
-                logger.warning(f"[{self.name}] HTTP {e.response.status_code} for {url}")
+                status = e.response.status_code
+                logger.warning(f"[{self.name}] HTTP {status} for {url}")
                 if attempt < max_retries - 1:
-                    await asyncio.sleep(2 ** attempt)
+                    await self._wait_with_backoff(attempt, status)
             except httpx.TimeoutException:
                 logger.warning(f"[{self.name}] Timeout for {url}")
                 if attempt < max_retries - 1:
-                    await asyncio.sleep(2 ** attempt)
+                    await self._wait_with_backoff(attempt)
             except Exception as e:
                 logger.error(f"[{self.name}] Error fetching {url}: {e}")
                 if attempt < max_retries - 1:
-                    await asyncio.sleep(2 ** attempt)
+                    await self._wait_with_backoff(attempt)
         logger.error(f"[{self.name}] Failed after {max_retries} retries: {url}")
         return None
 
@@ -58,16 +75,17 @@ class BaseFetcher:
                 logger.info(f"[{self.name}] Successfully fetched HTML {url}")
                 return resp.text
             except httpx.HTTPStatusError as e:
-                logger.warning(f"[{self.name}] HTTP {e.response.status_code} for {url}")
+                status = e.response.status_code
+                logger.warning(f"[{self.name}] HTTP {status} for {url}")
                 if attempt < max_retries - 1:
-                    await asyncio.sleep(2 ** attempt)
+                    await self._wait_with_backoff(attempt, status)
             except httpx.TimeoutException:
                 logger.warning(f"[{self.name}] Timeout for {url}")
                 if attempt < max_retries - 1:
-                    await asyncio.sleep(2 ** attempt)
+                    await self._wait_with_backoff(attempt)
             except Exception as e:
                 logger.error(f"[{self.name}] Error fetching {url}: {e}")
                 if attempt < max_retries - 1:
-                    await asyncio.sleep(2 ** attempt)
+                    await self._wait_with_backoff(attempt)
         logger.error(f"[{self.name}] Failed after {max_retries} retries: {url}")
         return None

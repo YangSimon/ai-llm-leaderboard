@@ -10,7 +10,7 @@ class OpenRouterFetcher(BaseFetcher):
 
     def __init__(self):
         super().__init__('OpenRouter')
-        self.url = DATA_SOURCES[1].url
+        self.url = next((s.url for s in DATA_SOURCES if s.name == 'OpenRouter'), DATA_SOURCES[1].url)
 
     async def fetch(self) -> List[RawModel]:
         """Fetch models from OpenRouter API"""

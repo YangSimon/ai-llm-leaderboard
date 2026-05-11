@@ -10,7 +10,7 @@ class LMSYSFetcher(BaseFetcher):
 
     def __init__(self):
         super().__init__('LMSYS')
-        self.url = DATA_SOURCES[0].url
+        self.url = next((s.url for s in DATA_SOURCES if s.name == 'LMSYS Arena'), DATA_SOURCES[0].url)
 
     async def fetch(self) -> List[RawModel]:
         """Fetch models from LMSYS Arena API"""
@@ -21,16 +21,16 @@ class LMSYSFetcher(BaseFetcher):
             return models
 
         try:
-            # The API returns a list of model entries
-            entries = data if isinstance(data, list) else data.get('data', data.get('models', []))
-            
+            entries = data if isinstance(data, list) else data.get('data', data.get('models', [])))
+
             if isinstance(entries, dict):
-                # Sometimes it's {category: [models]}
+                collected = []
                 for key, val in entries.items():
                     if isinstance(val, list):
-                        entries.extend(val)
+                        collected.extend(val)
                     elif isinstance(val, dict):
-                        entries = list(val.values())
+                        collected.extend(val.values())
+                entries = collected
 
             if not isinstance(entries, list):
                 logger.error(f"[LMSYS] Unexpected data format: {type(entries)}")

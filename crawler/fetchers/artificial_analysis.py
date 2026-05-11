@@ -21,7 +21,7 @@ class ArtificialAnalysisFetcher(BaseFetcher):
 
     def __init__(self):
         super().__init__('ArtificialAnalysis')
-        self.url = DATA_SOURCES[2].url
+        self.url = next((s.url for s in DATA_SOURCES if s.name == 'Artificial Analysis'), DATA_SOURCES[2].url)
 
     async def fetch(self) -> List[RawModel]:
         """Fetch models using all available extraction strategies."""
@@ -194,26 +194,22 @@ class ArtificialAnalysisFetcher(BaseFetcher):
     def _extract_script_data(self, soup: BeautifulSoup) -> List[RawModel]:
         """Extract model data from non-NextJS script tags containing JSON arrays."""
         models = []
-        model_name_patterns = [
-            r'gpt', r'claude', r'gemini', r'llama', r'mistral', r'deepseek',
-            r'qwen', r'grok', r'phi', r'gemma', r'yi-', r'glm',
-        ]
 
         for script in soup.find_all('script'):
             text = script.string or ''
-            if not text or len(text) < 50:
+            if not text or len(text) < 50 or len(text) > 200_000:
                 continue
-            # Skip already processed
             if script.get('id') == '__NEXT_DATA__' or script.get('type') == 'application/ld+json':
                 continue
 
-            # Look for JSON-like content that might hold model data
-            for match in re.finditer(r'(\[[\s\S]*?\])', text):
+            for match in re.finditer(r'(\[(?:[^\[\]]|\[(?:[^\[\]])*\])*\])', text[:50000]):
+                candidate = match.group(1)
+                if len(candidate) > 100_000:
+                    continue
                 try:
-                    data = json.loads(match.group(1))
+                    data = json.loads(candidate)
                     if not isinstance(data, list) or len(data) < 2:
                         continue
-                    # Check if entries look like model data
                     sample = data[0]
                     if isinstance(sample, dict) and self._looks_like_model(sample):
                         for item in data:
@@ -224,10 +220,12 @@ class ArtificialAnalysisFetcher(BaseFetcher):
                 except json.JSONDecodeError:
                     continue
 
-            # Try object assignments: window.__DATA__ = {...} or var models = [...]
-            for match in re.finditer(r'(?:var|let|const|window\.)\s*\w+\s*=\s*(\[[\s\S]*?\]);', text):
+            for match in re.finditer(r'(?:var|let|const|window\.)\s*\w+\s*=\s*(\[(?:[^\[\]]|\[(?:[^\[\]])*\])*\]);', text[:50000]):
+                candidate = match.group(1)
+                if len(candidate) > 100_000:
+                    continue
                 try:
-                    data = json.loads(match.group(1))
+                    data = json.loads(candidate)
                     if isinstance(data, list) and len(data) >= 1:
                         sample = data[0]
                         if isinstance(sample, dict) and self._looks_like_model(sample):
@@ -419,7 +417,7 @@ class ArtificialAnalysisFetcher(BaseFetcher):
             return None
         try:
             f = float(val)
-            return f if f > 0 else None
+            return f if f >= 0 else None
         except (ValueError, TypeError):
             # Try cleaning: remove %, extract number
             if isinstance(val, str):

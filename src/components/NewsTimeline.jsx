@@ -23,6 +23,17 @@ import { newsData, newsCategories } from '../data/news';
 import NewsDetail from './NewsDetail';
 import { formatDate } from '../utils/timeUtils';
 
+const CATEGORY_COLORS = {
+  '产品发布': '#10b981',
+  '技术突破': '#f59e0b',
+  '开源发布': '#8b5cf6',
+  '行业动态': '#00a3ff',
+  '行业应用': '#ec4899',
+  '行业报告': '#06b6d4',
+};
+
+const getCategoryColor = (category) => CATEGORY_COLORS[category] || '#6b7280';
+
 const NewsTimeline = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedNews, setSelectedNews] = useState(null);
@@ -38,18 +49,6 @@ const NewsTimeline = () => {
   const handleNewsClick = (news) => {
     setSelectedNews(news);
     setDetailOpen(true);
-  };
-
-  const getCategoryColor = (category) => {
-    const colors = {
-      '产品发布': '#10b981',
-      '技术突破': '#f59e0b',
-      '开源发布': '#8b5cf6',
-      '行业动态': '#00a3ff',
-      '行业应用': '#ec4899',
-      '行业报告': '#06b6d4',
-    };
-    return colors[category] || '#6b7280';
   };
 
   return (
@@ -138,7 +137,7 @@ const NewsTimeline = () => {
                       {news.title}
                     </Typography>
                     <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                      {news.summary.substring(0, 80)}...
+                      {(news.summary || '').substring(0, 80)}...
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                       <Chip
