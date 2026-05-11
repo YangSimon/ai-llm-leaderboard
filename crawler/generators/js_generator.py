@@ -30,7 +30,7 @@ def model_to_js_obj(m: ProcessedModel) -> str:
         lines.append(f'      eloScore: {m.eloScore},')
     lines.append(f'      lastUpdated: {js_str(m.lastUpdated)},')
     lines.append('    }')
-    return ',\n'.join(lines)
+    return '\n'.join(lines)
 
 
 def news_to_js_obj(n: ProcessedNews) -> str:
@@ -48,7 +48,7 @@ def news_to_js_obj(n: ProcessedNews) -> str:
     lines.append(f'    author: {js_str(n.author)},')
     lines.append(f'    lastUpdated: {js_str(n.lastUpdated)},')
     lines.append('  }')
-    return ',\n'.join(lines)
+    return '\n'.join(lines)
 
 
 def generate_leaderboard_js(classified: Dict[str, List[ProcessedModel]], output_path: str):
