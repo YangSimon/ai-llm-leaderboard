@@ -259,7 +259,7 @@ const ModelCard = () => {
                     ))}
                     {(model.tags || []).length > 3 && (
                       <Chip
-                        label={`+${model.tags.length - 3}`}
+                        label={`+${(model.tags || []).length - 3}`}
                         size="small"
                         sx={{
                           height: 20,

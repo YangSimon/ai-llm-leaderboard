@@ -125,7 +125,8 @@ def _merge_group(group: List[RawModel]) -> RawModel:
                 setattr(best, dim, getattr(m, dim))
         # Track sources
         existing_sources = best.extra.get('sources', best.source)
-        if m.source not in existing_sources:
+        source_list = existing_sources.split(',') if isinstance(existing_sources, str) else [existing_sources]
+        if m.source not in source_list:
             best.extra['sources'] = f"{existing_sources},{m.source}"
 
     return best

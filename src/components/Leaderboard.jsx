@@ -24,8 +24,8 @@ const Leaderboard = ({ onModelClick }) => {
 
   const sortedData = useMemo(() => {
     const sorted = [...currentData].sort((a, b) => {
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
+      const aValue = a[sortConfig.key] ?? 0;
+      const bValue = b[sortConfig.key] ?? 0;
       
       if (sortConfig.direction === 'asc') {
         return aValue - bValue;

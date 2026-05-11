@@ -21,7 +21,7 @@ class LMSYSFetcher(BaseFetcher):
             return models
 
         try:
-            entries = data if isinstance(data, list) else data.get('data', data.get('models', [])))
+            entries = data if isinstance(data, list) else data.get('data', data.get('models', []))
 
             if isinstance(entries, dict):
                 collected = []

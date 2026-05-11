@@ -154,7 +154,7 @@ const ModelDetail = ({ open, onClose, model }) => {
         </Box>
 
         {/* Model Detail Info */}
-        {detail.capabilities && detail.capabilities.length > 0 && (
+        {detail?.capabilities?.length > 0 && (
           <Box sx={{ mb: 4 }}>
             <Typography variant="subtitle2" sx={{ color: 'text.secondary', mb: 2 }}>
               核心能力详解
@@ -211,7 +211,7 @@ const ModelDetail = ({ open, onClose, model }) => {
           </Typography>
         </Box>
 
-        {detail.fullDescription && (
+        {detail?.fullDescription && (
           <>
             <Divider sx={{ borderColor: 'rgba(255,255,255,0.05)', my: 3 }} />
             <Box>
@@ -233,7 +233,7 @@ const ModelDetail = ({ open, onClose, model }) => {
         )}
 
         {/* Use Cases */}
-        {detail.useCases && detail.useCases.length > 0 && (
+        {detail?.useCases?.length > 0 && (
           <Box sx={{ mt: 4 }}>
             <Typography variant="subtitle2" sx={{ color: 'text.secondary', mb: 2 }}>
               适用场景
@@ -256,7 +256,7 @@ const ModelDetail = ({ open, onClose, model }) => {
         )}
 
         {/* Pricing */}
-        {detail.pricing && (
+        {detail?.pricing && (
           <Box 
             sx={{ 
               mt: 4, 

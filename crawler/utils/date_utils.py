@@ -14,21 +14,23 @@ def days_ago(days: int) -> str:
     return (datetime.now(timezone.utc) - timedelta(days=days)).strftime('%Y-%m-%d')
 
 def parse_date(date_str: str) -> datetime:
-    """Parse various date formats"""
+    """Parse various date formats, always returning timezone-aware UTC datetime"""
     if not date_str:
         return datetime.now(timezone.utc)
-    
-    # ISO format
+
     for fmt in [
         '%Y-%m-%dT%H:%M:%S%z',
         '%Y-%m-%dT%H:%M:%SZ',
         '%Y-%m-%d %H:%M:%S',
         '%Y-%m-%d',
-        '%a, %d %b %Y %H:%M:%S %z',  # RSS format
+        '%a, %d %b %Y %H:%M:%S %z',
         '%a, %d %b %Y %H:%M:%S GMT',
     ]:
         try:
-            return datetime.strptime(date_str, fmt)
+            dt = datetime.strptime(date_str, fmt)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
         except ValueError:
             continue
     return datetime.now(timezone.utc)

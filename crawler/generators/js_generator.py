@@ -49,6 +49,7 @@ def _model_to_js_dict(m: ProcessedModel) -> str:
     if m.eloScore is not None:
         fields.append(('eloScore', str(m.eloScore)))
     fields.append(('lastUpdated', _safe_js_value(m.lastUpdated)))
+    fields.append(('isEstimated', 'true' if m.isEstimated else 'false'))
 
     inner = ',\n      '.join(f'{k}: {v}' for k, v in fields)
     return f'    {{\n      {inner}\n    }}'

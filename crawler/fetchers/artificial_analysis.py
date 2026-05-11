@@ -274,7 +274,7 @@ class ArtificialAnalysisFetcher(BaseFetcher):
             # Parse data rows
             tbody = table.find('tbody') or table
             rows = tbody.find_all('tr')
-            start = 1 if headers and table.find('thead') else 1
+            start = 0 if table.find('thead') else 1
 
             for row in rows[start:]:
                 cells = row.find_all(['td', 'th'])

@@ -71,7 +71,7 @@ const RefreshTimer = ({ onRefresh }) => {
             height: 32,
             borderRadius: '50%',
             background: needsRefresh ? 'primary.main' : 'rgba(255, 255, 255, 0.05)',
-            cursor: needsRefresh ? 'pointer' : 'default',
+            cursor: 'pointer',
             transition: 'all 0.3s ease',
             ...(needsRefresh && {
               animation: 'pulse-glow 2s ease-in-out infinite',
